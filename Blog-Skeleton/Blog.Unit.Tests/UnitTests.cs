@@ -1,17 +1,16 @@
 ﻿using Blog.Unit.Tests.Pages.CreatePostPage;
 using NUnit.Framework;
 using OpenQA.Selenium;
-using OpenQA.Selenium.Support.UI;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Blog.Unit.Tests.Models;
+using Blog.Unit.Tests.Pages.RegistrationPage;
 
 
 namespace Blog.Unit.Tests
 {
     using Pages.ChangePasswordPage;
+    using Pages.DeletePostPage;
+    using Pages.EditPostPage;
     using Pages.HomePage;
     using Utility;
 
@@ -19,6 +18,48 @@ namespace Blog.Unit.Tests
     public class UnitTests
     {
         public IWebDriver Driver;
+
+        public User TestUser { get; set; } = new User(
+            fullname: "Full Name", 
+            email: "TestEmail_01@test.com", 
+            password: "Testpassword_1", 
+            newPassword: "Testpassword_1"
+            );
+        public User TestUser2 { get; set; } = new User(
+            fullname: "Full Name",
+            email: "TestEmail_02@test.com",
+            password: "Testpassword_2",
+            newPassword: "Testpassword_2"
+            );
+
+        public User ChangeUser { get; set; } = new User(
+            fullname: "Full Name", 
+            email: "TestEmail_01@test.com", 
+            password: "Testpassword_1", 
+            newPassword: "Testpassword_2", 
+            confirmPassword: "Testpassword_2"
+            );
+
+        public User WrongUser { get; set; } = new User(
+            fullname: "Full Name",
+            email: "TestEmail_01@test.com",
+            password: "Testpassword_1",
+            newPassword: "Testpassword_2",
+            confirmPassword: "Testpassword_3"
+        );
+
+        public User WeakUser { get; set; } = new User(
+            fullname: "Full Name",
+            email: "TestEmail_01@test.com",
+            password: "Testpassword_1",
+            newPassword: "1",
+            confirmPassword: "1"
+        );
+
+        public Article TestArticle { get; set; } = new Article(
+            title: "Lorem ipsum dolor sit",
+            content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi ac pretium velit. Morbi laoreet mauris ac est congue, quis iaculis."
+            );
 
 
         [SetUp]
@@ -28,7 +69,9 @@ namespace Blog.Unit.Tests
         }
 
         [Test]
+        [Author("ST")]
         public void CheckSiteLoad()
+        
         {
             //Arrange
             HomePage home = new HomePage(this.Driver);
@@ -37,43 +80,285 @@ namespace Blog.Unit.Tests
             home.NavigateTo();
 
             //Assert
-            Assert.AreEqual("SOFTUNI BLOG", home.LinkLogo.Text);
+            home.LogoAsserter("SOFTUNI BLOG");
+            
         }
 
         [Test]
+        [Author("Kristin Krastev")]
         public void CreateArticlePageLoad()
         {
-           
             CreatePostPage createArticle = new CreatePostPage(this.Driver);
 
-            BlogTestUtilities.LogInGoTo(createArticle,"TestEmail_01@test.com", "Testpassword_1");
-            createArticle.FillAndSubmit("TestTitle_01", "Content for TestTitle_01");
+            BlogTestUtilities.LogInGoTo(createArticle, this.TestUser);
            
-            Assert.AreEqual("TestTitle_01\r\nContent for TestTitle_01\r\n--author", createArticle.Articles.Last().Text);
-            
+            createArticle.AsserterArticlePageLoad("Create Article"); 
          }
 
         [Test]
+        [Author("Kristin Krastev")]
+        public void CreateArticleWithoutTitle()
+        {
+            CreatePostPage createArticle = new CreatePostPage(this.Driver);
+
+            BlogTestUtilities.LogInGoTo(createArticle, this.TestUser);
+            createArticle.FillAndSubmit(String.Empty, "Content for TestTitle_01");
+
+            createArticle.AsserterArticleError("The Title field is required.");
+
+        }
+
+        [Test]
+        [Author("Kristin Krastev")]
+        public void CreateArticleWithoutContent()
+        {
+            CreatePostPage createArticle = new CreatePostPage(this.Driver);
+
+            BlogTestUtilities.LogInGoTo(createArticle, this.TestUser);
+            createArticle.FillAndSubmit("TestTitle_01", String.Empty);
+
+            createArticle.AsserterArticleError("The Content field is required.");
+        }
+
+        [Test]
+        [Author("Kristin Krastev")]
+        public void CreateArticleCancel()
+        {
+            CreatePostPage createArticle = new CreatePostPage(this.Driver);
+
+            BlogTestUtilities.LogInGoTo(createArticle, this.TestUser);
+            createArticle.FillAndCancel("TestTitle_Cancel", "Content for TestTitle_01");
+
+            createArticle.AsserterArticleCancel("TestTitle_Cancel");
+        }
+
+        [Test]
+        [Author("Kristin Krastev")]
+        public void CreateArticleCreate()
+        {
+            CreatePostPage createArticle = new CreatePostPage(this.Driver);
+
+            BlogTestUtilities.LogInGoTo(createArticle, this.TestUser);
+            createArticle.FillAndSubmit("TestTitle_01", "Content for TestTitle_01");
+
+            createArticle.AsserterArticleExist("TestTitle_01");
+        }
+
+        [Test]
+        [Author("Kristin Krastev")]
+        public void EditPageLoad()
+        {
+            EditPostPage editArticle = new EditPostPage(this.Driver);
+
+            BlogTestUtilities.LogInGoTo(editArticle, this.TestUser);
+            editArticle.GoToEditArticle("TestTitle_01");
+
+            editArticle.AsserterEditArticlePageLoad("Edit Article");
+            //editArticle.EditContentAndSubmit("New Content for TestTitle_01");
+
+        }
+        [Test]
+        [Author("Kristin Krastev")]
+        public void EditPageTitle()
+        {
+            EditPostPage editArticle = new EditPostPage(this.Driver);
+
+            BlogTestUtilities.LogInGoTo(editArticle, this.TestUser);
+            editArticle.GoToEditArticle("TestTitle_01");
+            editArticle.EditTitleAndSubmit("NewTestTitle_01");
+
+            editArticle.AsserterArticleExist("NewTestTitle_01");
+        }
+        [Test]
+        [Author("Kristin Krastev")]
+        public void EditPageContent()
+        {
+            EditPostPage editArticle = new EditPostPage(this.Driver);
+
+            BlogTestUtilities.LogInGoTo(editArticle, TestUser);
+            editArticle.GoToEditArticle("TestTitle_01");
+            editArticle.EditContentAndSubmit("New Content for TestTitle_01");
+
+            editArticle.AsserterArticleExist("NewTestTitle_01");
+        }
+        [Test]
+        [Author("Kristin Krastev")]
+        public void EditPageWithDifferentUser()
+        {
+            EditPostPage editArticle = new EditPostPage(this.Driver);
+
+            BlogTestUtilities.LogInGoTo(editArticle, TestUser2);
+            editArticle.GoToEditArticle("TestTitle_User1");
+          
+
+            editArticle.AsserterEditArticleEditWithDifferentUserError("HTTP Error 403.0 - Forbidden");
+
+        }
+        [Test]
+        [Author("Kristin Krastev")]
+        public void EditPageCancel()
+        {
+            EditPostPage editArticle = new EditPostPage(this.Driver);
+
+            BlogTestUtilities.LogInGoTo(editArticle, TestUser);
+            editArticle.GoToEditArticle("TestTitle_User1");
+            editArticle.EditAndCancel("Cancel Title", "Cancel Content");
+
+            editArticle.AsserterEditArticleCancel("Cancel Title");
+
+        }
+        [Test]
+        [Author("Zlatyo Uzunov")]
         public void ChangePassword()
         {
 
             ChangePasswordPage page = new ChangePasswordPage(this.Driver);
+            var user = this.ChangeUser;
 
-            BlogTestUtilities.LogInGoTo(page, "TestEmail_01@test.com", "Testpassword_1");
-            page.FillAndSubmit("Testpassword_1", "Testpassword_2");
+            BlogTestUtilities.LogInGoTo(page, user);
+            page.FillAndSubmit(user);
+
             page.LogOff();
-            BlogTestUtilities.LogInGoTo(page, "TestEmail_01@test.com", "Testpassword_2");
+            BlogTestUtilities.LogInGoTo(page, user);
 
             var status = this.Driver.Manage().Cookies.GetCookieNamed(".AspNet.ApplicationCookie");
 
+            // if changed set the password again (not breaking other tests)
+            if (status != null)
+            {
+                page.NavigateTo();
+                page.FillAndSubmit(user);
+            }
+
             Assert.NotNull(status);
 
-            //set the password again (not breaking other tests)
+        }
+        
+
+        [Test]
+        [Author("Zlatyo Uzunov")]
+        public void ChangePasswordWeak()
+        {
+
+            ChangePasswordPage page = new ChangePasswordPage(this.Driver);
+
+            var user = this.WeakUser;
+
+            // Login with regular user
+            BlogTestUtilities.LogInGoTo(page, user);
+
+            // Change password for user
+            page.FillAndSubmit(user);
+
+            page.LogOff();
+            BlogTestUtilities.LogInGoTo(page, user);
+
+            var status = this.Driver.Manage().Cookies.GetCookieNamed(".AspNet.ApplicationCookie");
+
+            //if changed set the password again (not breaking other tests)
+            if (status != null)
+            {
+                page.NavigateTo();
+                page.FillAndSubmit(user);
+            }
+
+            Assert.Null(status);
+        }
+
+        [Test]
+        [Author("Zlatyo Uzunov")]
+        public void ChangePasswordWrong()
+        {
+
+            ChangePasswordPage page = new ChangePasswordPage(this.Driver);
+
+            var user = this.WrongUser;
+
+            BlogTestUtilities.LogInGoTo(page, user);
+            page.FillAllAndSubmit(user);
+            
+            Assert.AreEqual("The new password and confirmation password do not match.",page.AlertPasswordsDoNotMatch.Text);
+        }
+
+        [Test]
+        [Property("Registration Page Tests", 1)]
+        [Author("ST")]
+        public void RegistrateWithValidUserAndPass()
+        {
+            RegistrationPage page = new RegistrationPage(this.Driver);
+            string userMail = "gogo"+DateTime.Now.Ticks+"@gmail.com";
+            User user = new User(this.TestUser.FullName, userMail , this.TestUser.Password);
+
             page.NavigateTo();
-            page.FillAndSubmit("Testpassword_2", "Testpassword_1");
+            page.FillRegForm(user);
 
+            page.AssertIfRegistrationIsOk("Hello " + userMail + "!");
+            
+        }
 
+        [Test]
+        [Property("Registration Page Tests", 1)]
+        [Author("ST")]
+        public void RegistrateWithInvalidUserMail()
+        {
+            RegistrationPage page = new RegistrationPage(this.Driver);
+            User user = new User("Test User", "Gogo@gmail", "123456");
 
+            page.NavigateTo();
+            page.FillRegForm(user);
+
+            page.AssertIfRegistrationWithWrongMail("The Email field is not a valid e-mail address.");
+
+        }
+
+        [Test]
+        [Property("Registration Page Tests", 1)]
+        [Author("ST")]
+        public void RegistrateWithoutFullName()
+        {
+            RegistrationPage page = new RegistrationPage(this.Driver);
+            User user = new User("", "Gogo" + DateTime.Now.Ticks + "@gmail.com", "123456");
+
+            page.NavigateTo();
+            page.FillRegForm(user);
+
+            page.AssertRegistrationWithoutFullName("The Full Name field is required.");
+
+        }
+
+        [Test]
+        [Property("Registration Page Tests", 1)]
+        [Author("ST")]
+        public void RegistrateWithoutPassword()
+        {
+            RegistrationPage page = new RegistrationPage(this.Driver);
+            User user = new User(TestUser.FullName, "Gogo" + DateTime.Now.Ticks + "@gmail.com", "");
+
+            page.NavigateTo();
+            page.FillRegForm(user);
+
+            page.AssertRegistrationWithoutPass("The Password field is required.");
+
+        }
+
+        [Test]
+        [Author("Zlatyo Uzunov")]
+        public void DeleteOwnArticle()
+        {
+            var user = this.TestUser;
+            var article = this.TestArticle;
+
+            BlogTestUtilities.CreateArticle(this.Driver, user, article);
+
+            DeletePostPage page = new DeletePostPage(this.Driver, user, article);
+            page.NavigateTo();
+            page.ButtonDelete.Click();
+
+            Assert.IsFalse(
+                BlogTestUtilities.CheckArticleExistsByTitle(page, article)
+                );
+
+            
         }
     }
 }

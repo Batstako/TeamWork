@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Blog.Unit.Tests.Models;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Support.UI;
 
@@ -26,6 +23,7 @@ namespace Blog.Unit.Tests.Pages
         public void NavigateTo()
         {
             Driver.Navigate().GoToUrl(this.BaseUrl + this.PageUrl);
+            Driver.Manage().Window.Maximize();
         }
 
         public void Type(IWebElement element, string text)
